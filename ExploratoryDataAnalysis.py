@@ -58,7 +58,7 @@ def norm_value(input):
 
     return x
 
-df = pd.read_csv('acetylcholinesterase_03_bioactivity_data_curated.csv')
+df = pd.read_csv('processeddata.csv')
 df_no_smiles = df.drop(columns='canonical_smiles')
 # dropping nonessential data
 
@@ -83,3 +83,122 @@ df_combined.standard_value.describe()
 
 df_norm = norm_value(df_combined)
 df_final = pIC50(df_norm)
+print(df_final.pIC50.describe())
+
+df_final.to_csv('acetylcholinesterase_04_bioactivity_data_3class_pIC50.csv')
+df_2class = df_final[df_final['class'] != 'intermediate']
+# removing the intermediate class from the dataset
+
+df_2class.to_csv('acetylcholinesterase_05_bioactivity_data_2class_pIC50.csv')
+
+# Performing chemical space analysis
+import seaborn as sns
+sns.set(style='ticks')
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(5.5, 5.5))
+
+sns.countplot(x='class', data=df_2class, edgecolor='black')
+
+plt.xlabel('Bioactivity class', fontsize=14, fontweight='bold')
+plt.ylabel('Frequency', fontsize=14, fontweight='bold')
+
+plt.savefig('plot_bioactivity_class.pdf')
+# just offers a visual representation of which inhibitors are labeled as "active" and "inactive"
+
+plt.figure(figsize=(5.5, 5.5))
+sns.scatterplot(x='MW', y='LogP', data=df_2class, hue='class', size='pIC50', edgecolor='black', alpha=0.7)
+
+plt.xlabel('MW', fontsize=14, fontweight='bold')
+plt.ylabel('LogP', fontsize=14, fontweight='bold')
+plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0)
+plt.savefig('plot_MW_vs_LogP.pdf')
+# offers a scatterplot representation to begin training the model
+# is there a relationship between pIC50 value, logP and if the drug inhibitor is active/inactive?
+
+plt.figure(figsize=(5.5, 5.5))
+sns.boxplot(x = 'class', y = 'pIC50', data = df_2class)
+plt.xlabel('Bioactivity class', fontsize=14, fontweight='bold')
+plt.ylabel('pIC50 value', fontsize=14, fontweight='bold')
+plt.savefig('plot_ic50.pdf')
+
+
+def mannwhitney(descriptor, verbose=False):
+    # https://machinelearningmastery.com/nonparametric-statistical-significance-tests-in-python/
+    from numpy.random import seed
+    from numpy.random import randn
+    from scipy.stats import mannwhitneyu
+
+    # seed the random number generator
+    seed(1)
+
+    # actives and inactives
+    selection = [descriptor, 'class']
+    df = df_2class[selection]
+    active = df[df['class'] == 'active']
+    active = active[descriptor]
+
+    selection = [descriptor, 'class']
+    df = df_2class[selection]
+    inactive = df[df['class'] == 'inactive']
+    inactive = inactive[descriptor]
+
+    # compare samples
+    stat, p = mannwhitneyu(active, inactive)
+    # print('Statistics=%.3f, p=%.3f' % (stat, p))
+
+    # interpret
+    alpha = 0.05
+    if p > alpha:
+        interpretation = 'Same distribution (fail to reject H0)'
+    else:
+        interpretation = 'Different distribution (reject H0)'
+
+    results = pd.DataFrame({'Descriptor': descriptor,
+                            'Statistics': stat,
+                            'p': p,
+                            'alpha': alpha,
+                            'Interpretation': interpretation}, index=[0])
+    filename = 'mannwhitneyu_' + descriptor + '.csv'
+    results.to_csv(filename)
+
+    return results
+
+# the code segment above uses a machine learing model to test if there is a statistical difference between active and
+# inactive inhibitors in term of the pIC50 variable -- remember the IC50/PIC50 is nothing more than a value that
+# indicates the potency of a drug -- "how much drug is needed to inhibit a biological process by half"
+
+
+mannwhitney('pIC50')
+# since the p-value is extremely low, we can reject the null hypothesis
+
+# do the same process for all the other gathered values
+plt.figure(figsize=(5.5, 5.5))
+sns.boxplot(x = 'class', y = 'MW', data = df_2class)
+plt.xlabel('Bioactivity class', fontsize=14, fontweight='bold')
+plt.ylabel('MW', fontsize=14, fontweight='bold')
+plt.savefig('plot_MW.pdf')
+mannwhitney('MW')
+
+plt.figure(figsize=(5.5, 5.5))
+sns.boxplot(x = 'class', y = 'LogP', data = df_2class)
+plt.xlabel('Bioactivity class', fontsize=14, fontweight='bold')
+plt.ylabel('LogP', fontsize=14, fontweight='bold')
+plt.savefig('plot_LogP.pdf')
+mannwhitney('LogP')
+
+plt.figure(figsize=(5.5, 5.5))
+sns.boxplot(x = 'class', y = 'NumHDonors', data = df_2class)
+plt.xlabel('Bioactivity class', fontsize=14, fontweight='bold')
+plt.ylabel('NumHDonors', fontsize=14, fontweight='bold')
+plt.savefig('plot_NumHDonors.pdf')
+mannwhitney('NumHDonors')
+
+plt.figure(figsize=(5.5, 5.5))
+sns.boxplot(x = 'class', y = 'NumHAcceptors', data = df_2class)
+plt.xlabel('Bioactivity class', fontsize=14, fontweight='bold')
+plt.ylabel('NumHAcceptors', fontsize=14, fontweight='bold')
+plt.savefig('plot_NumHAcceptors.pdf')
+print(mannwhitney('NumHAcceptors'))
+
+# all of the above distributions displayed "significant statistical difference"
