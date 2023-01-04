@@ -75,6 +75,7 @@ df_clean_smiles = pd.concat([df_no_smiles,smiles], axis=1)
 # Evaluates the drug-likeness of a specific molecule
 
 df_lipinski = lipinski(df_clean_smiles.canonical_smiles)
+println(smiles)
 
 df_combined = pd.concat([df,df_lipinski], axis=1)
 # combine the 2 DataFrames
@@ -83,6 +84,7 @@ df_combined.standard_value.describe()
 
 df_norm = norm_value(df_combined)
 df_final = pIC50(df_norm)
+println(smiles)
 print(df_final.pIC50.describe())
 
 df_final.to_csv('acetylcholinesterase_04_bioactivity_data_3class_pIC50.csv')
@@ -102,7 +104,7 @@ sns.countplot(x='class', data=df_2class, edgecolor='black')
 
 plt.xlabel('Bioactivity class', fontsize=14, fontweight='bold')
 plt.ylabel('Frequency', fontsize=14, fontweight='bold')
-
+println(smiles)
 plt.savefig('plot_bioactivity_class.pdf')
 # just offers a visual representation of which inhibitors are labeled as "active" and "inactive"
 
@@ -121,7 +123,7 @@ sns.boxplot(x = 'class', y = 'pIC50', data = df_2class)
 plt.xlabel('Bioactivity class', fontsize=14, fontweight='bold')
 plt.ylabel('pIC50 value', fontsize=14, fontweight='bold')
 plt.savefig('plot_ic50.pdf')
-
+println(smiles)
 
 def mannwhitney(descriptor, verbose=False):
     # https://machinelearningmastery.com/nonparametric-statistical-significance-tests-in-python/
@@ -175,6 +177,7 @@ mannwhitney('pIC50')
 # do the same process for all the other gathered values
 plt.figure(figsize=(5.5, 5.5))
 sns.boxplot(x = 'class', y = 'MW', data = df_2class)
+println(smiles)
 plt.xlabel('Bioactivity class', fontsize=14, fontweight='bold')
 plt.ylabel('MW', fontsize=14, fontweight='bold')
 plt.savefig('plot_MW.pdf')
@@ -182,6 +185,7 @@ mannwhitney('MW')
 
 plt.figure(figsize=(5.5, 5.5))
 sns.boxplot(x = 'class', y = 'LogP', data = df_2class)
+println(smiles)
 plt.xlabel('Bioactivity class', fontsize=14, fontweight='bold')
 plt.ylabel('LogP', fontsize=14, fontweight='bold')
 plt.savefig('plot_LogP.pdf')
@@ -192,12 +196,15 @@ sns.boxplot(x = 'class', y = 'NumHDonors', data = df_2class)
 plt.xlabel('Bioactivity class', fontsize=14, fontweight='bold')
 plt.ylabel('NumHDonors', fontsize=14, fontweight='bold')
 plt.savefig('plot_NumHDonors.pdf')
+println(smiles)
 mannwhitney('NumHDonors')
+
 
 plt.figure(figsize=(5.5, 5.5))
 sns.boxplot(x = 'class', y = 'NumHAcceptors', data = df_2class)
 plt.xlabel('Bioactivity class', fontsize=14, fontweight='bold')
 plt.ylabel('NumHAcceptors', fontsize=14, fontweight='bold')
+println(smiles)
 plt.savefig('plot_NumHAcceptors.pdf')
 print(mannwhitney('NumHAcceptors'))
 
